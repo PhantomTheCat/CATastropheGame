@@ -1,0 +1,382 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Security.Policy;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using static System.Console;
+
+
+namespace MidtermAdventureGame
+{
+    internal class Player
+    {
+        //Properties
+        public string PlayerName;
+        public int EvidenceFound = 0;
+        public MansionRoom CurrentPlaceAt;
+
+        //List of Player's Inventory (Contains Evidence)
+        List<Evidence> PlayersEvidence = new List<Evidence>();
+
+        //Player's current choice of evidence
+        public Evidence PlayerCurrentEvidence;
+
+
+        //Methods
+        public void SetPlayerName() //Method to set player name
+        {
+            //asking user for input
+            WriteLine("For starters, what's your name detective?");
+            WriteLine();
+            //using try and catch to verify user input
+            try
+            {
+                //Triming player's name to avoid bad input
+                PlayerName = Console.ReadLine().Trim();
+                //Stating player name for them
+                WriteLine();
+                WriteLine($"Hello there '{PlayerName}'! Pleasure to work with you and let's get into the game!");
+                WriteLine();
+                Thread.Sleep(3000);
+            }
+            catch 
+            {
+                //Letting user know what went wrong
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine("\nThat's not a valid name, please only type letters!\n");
+                ForegroundColor = ConsoleColor.Green;
+                Thread.Sleep(3000);
+                SetPlayerName();
+            }
+
+        }
+
+
+        public void InvestigateRoom(MansionRoom CurrentRoom, List<Evidence> EvidenceList, ref bool InRoom) //Adds evidence from room to Player and removes it from room
+        {
+            //Set up a list in the parameters of InvestigateRoom to gain access to evidence list from Game class
+            
+            //Setting the current room, which is the variable we're using, to set the Main Player's current place at equal to
+            CurrentPlaceAt = CurrentRoom;
+
+            //if statement to see if room has evidence at all
+            if (CurrentRoom.EvidenceIn == true)
+            {
+                //For saying that evidence was in room
+                InRoom = true;
+
+                //Way of marking evidence (not just if the evidence is in room, but the actual evidence in possession of player)
+                    //Finding what evidence is in there
+                foreach (Evidence evidence in EvidenceList) 
+                {
+                    //Saying if the room the evidence is in is equal to the room the player is in
+                    if (evidence.StartingRoom == CurrentRoom) 
+                    {
+
+                        //Need something that tells the player the name and description of the evidence they found
+                        WriteLine();
+                        evidence.TellNameAndDescription();
+
+                        //Increments the amount of evidence the player has found
+                        EvidenceFound++;
+
+                        //Removes evidence from room and removes marker that room has been searched
+                        CurrentRoom.EvidenceOut();
+
+                        //Adds the evidence from the list of evidence to player's inventory list
+                        PlayersEvidence.Add(evidence);
+
+                        //For giving user something to use.
+                        ReadKey();
+                    }
+                }
+            }
+            //else statement for if room doesn't have evidence
+            else 
+            {
+                WriteLine();
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine("There was no evidence in this room...");
+                WriteLine();
+                ForegroundColor= ConsoleColor.Green;
+                ReadKey();
+                InRoom = false;
+            }
+        }
+
+        //Got help on how to pass by reference to actually translate the confessCalled into the ConfessCalled via ChatGTP
+        //Used the same from the other pass by reference.
+        public void UseEvidence(FamilyMember suspect, ref bool confessCalled) //Method used in to Interrogate
+        {
+
+            //Searching and writing out all options for player (Correct order based on their index)
+            SearchPlayersEvidence(suspect);
+            
+            //Referencing method of getting player response
+            GetPlayerResponse(suspect, ref confessCalled);
+
+
+            if (PlayerCurrentEvidence.IncriminatingAgainst == suspect) 
+            {
+                //Randomizing the method that gets called
+                Random random = new Random();
+                int RandomNumber = random.Next(1, 4);
+
+                //Help gotten from CHATGTP for solving how to get methods randomized
+                switch (RandomNumber)
+                {
+                    case 1:
+                        suspect.Deny(suspect, ref confessCalled);
+                        break;
+                    case 2:
+                        suspect.Flustered(suspect, ref confessCalled);
+                        break;
+                    case 3:
+                        suspect.Agree(suspect, ref confessCalled);
+                        break;
+                }
+                return;
+            }
+            else
+            {
+                suspect.Deny(suspect, ref confessCalled);
+            }
+        }
+        public void SearchPlayersEvidence(FamilyMember suspect) //Method for searching the PlayerEvidence List and bringing back the- 
+            //-correct evidence in the correct order
+        {
+            //Giving user background info
+            Clear();
+            WriteLine();
+            WriteLine();
+            WriteLine($"You are currently interrogating {suspect.SuspectName}");
+
+            //Asking user for prompt
+            WriteLine("=====================");
+            WriteLine("What piece of evidence would you like to use? Please type in their index number...");
+            WriteLine("=====================");
+            WriteLine();
+
+            //Searching list and printing them out in right order based on EvidenceIndex
+            foreach (Evidence evidence in PlayersEvidence) 
+            {
+                for (int i = 1; i <= 10; i++)
+                {
+                    if (i == evidence.EvidenceIndex)
+                    {
+                        WriteLine($"{evidence.EvidenceIndex}.) {evidence.EvidenceName}....");
+                        WriteLine();
+                    }
+                }
+                WriteLine();
+            }
+        }
+
+        public void GetPlayerResponse(FamilyMember suspect, ref bool confessCalled) //Method for getting the response of player
+        {
+            //Variable for player response
+            string playerResponse;
+
+            //Now converting player response 
+            try
+            {
+                //Getting player response
+                playerResponse = ReadLine().Trim();
+
+                //Converting player response from string to int to be used! Help gotten from CHATGTP
+                int playerActualResponse = int.Parse(playerResponse);
+
+                //Bool for checking if user inputted correct data (Help gotten from CHATGTP)
+                bool checkCorrectInput = false;
+
+                //Need to connect player response to a piece of evidence (string data type and Evidence data type)
+                foreach (Evidence evidence in PlayersEvidence) //Searching evidence list for features
+                {
+                    if (evidence.EvidenceIndex == playerActualResponse)
+                    {
+                        //Changing color of response to this
+                        ForegroundColor = ConsoleColor.DarkYellow;
+
+                        //Giving user background on what's happenning
+                        WriteLine($"\nYou have picked {evidence.EvidenceName}.");
+
+                        //Saying that user inputted the response correctly
+                        checkCorrectInput = true;
+
+                        //Putting the evidence from the list into the current piece of evidence they are using
+                        PlayerCurrentEvidence = evidence;
+
+                        //Changing text color back to default
+                        ForegroundColor = ConsoleColor.Green;
+                    }
+                }
+                //This one is good
+                if (checkCorrectInput == false) 
+                {
+                    ForegroundColor = ConsoleColor.Red;
+                    WriteLine("\nThat was an invalid choice and wasn't on the list, please pick a number...");
+                    ForegroundColor = ConsoleColor.Green;
+                    ReadKey();
+                    UseEvidence(suspect, ref confessCalled);
+                }
+                
+            }
+            
+            catch
+            {
+                //Something weird happening when thing used
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine("That was an invalid choice, please pick a number...");
+                ForegroundColor = ConsoleColor.Green;
+                ReadKey();
+                UseEvidence(suspect, ref confessCalled);
+            }
+            
+
+        }
+
+        public void SearchCameras(Evidence cameraEvidence, MansionRoom currentRoom, ref bool inRoom) //Can only be used when player is in the Security Camera Room, gives evidence from previous night
+        {
+            //Acts as piece of evidence
+            if (currentRoom.EvidenceIn == true)
+            {
+                //Need something that tells the player the name and description of the evidence they found
+                ForegroundColor = ConsoleColor.DarkYellow;
+                WriteLine();
+                WriteLine("You have found evidence!");
+                WriteLine();
+                WriteLine($"This piece of evidence is: {cameraEvidence.EvidenceName}...");
+                WriteLine();
+                WriteLine($"Description: {cameraEvidence.Description}.");
+                ForegroundColor = ConsoleColor.Green;
+
+                //Increments the amount of evidence the player has found
+                EvidenceFound++;
+
+                //Removes evidence from room and removes marker that room has been searched
+                currentRoom.EvidenceOut();
+
+                //Adds the evidence from the list of evidence to player's inventory list
+                PlayersEvidence.Add(cameraEvidence);
+
+                inRoom = true;
+
+                //For giving user something to use.
+                ReadKey();
+            }
+            else 
+            {
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine($"You have already searched this room....");
+                ForegroundColor = ConsoleColor.Green;
+
+                inRoom = false;
+
+                //For giving user something to use.
+                ReadKey();
+            }
+        }
+
+        //Need prompt for if player won the game
+        public void PlayerWin()
+        {
+            Clear();
+            //Ascii art gotten from https://patorjk.com/software/taag/#p=testall&f=Star%20Wars&t=You%20Win!
+            WriteLine(@"
+
+__   __            _    _ _       _ 
+\ \ / /           | |  | (_)     | |
+ \ V /___  _   _  | |  | |_ _ __ | |
+  \ // _ \| | | | | |/\| | | '_ \| |
+  | | (_) | |_| | \  /\  / | | | |_|
+  \_/\___/ \__,_|  \/  \/|_|_| |_(_)
+                                    
+                                    
+");
+            
+            //Sleep for seperating lines
+            Thread.Sleep(1000);
+
+            //Narrator congratualating the player
+            WriteLine();
+            WriteLine($"Narrator: Congratulations!!! You have won the game, Player '{PlayerName}'!");
+            WriteLine();
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+
+            //Samantha prompt
+            ForegroundColor = ConsoleColor.Red;
+            WriteLine("Samantha: Ah darn, I was hoping you would lose.....");
+            ForegroundColor = ConsoleColor.Green;
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+
+            //Narrator prompt
+            WriteLine();
+            WriteLine($"Narrator: Don't be like that Samantha, and we hope to see you again player!");
+            WriteLine();
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+            WriteLine();
+            WriteLine("============================");
+            WriteLine();
+
+        }
+
+        //Need prompt for if player lost the game
+        public void PlayerLost()
+        {
+            Clear();
+
+            //Samantha prompt
+            ForegroundColor = ConsoleColor.Red;
+            //Ascii art gotten from https://patorjk.com/software/taag/#p=testall&f=Fender&t=You%20lost....
+            WriteLine(@"
+
+____    ____  ______    __    __      __        ______        _______.___________.            
+\   \  /   / /  __  \  |  |  |  |    |  |      /  __  \      /       |           |            
+ \   \/   / |  |  |  | |  |  |  |    |  |     |  |  |  |    |   (----`---|  |----`            
+  \_    _/  |  |  |  | |  |  |  |    |  |     |  |  |  |     \   \       |  |                 
+    |  |    |  `--'  | |  `--'  |    |  `----.|  `--'  | .----)   |      |  |     __ __ __ __ 
+    |__|     \______/   \______/     |_______| \______/  |_______/       |__|    (__|__|__|__)
+                                                                                              
+
+");
+            Thread.Sleep(1000);
+            WriteLine("Samantha: HAHAHA, you lost!!!! Man, must suck to be you right now....");
+            ForegroundColor = ConsoleColor.Green;
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+
+            //Narrator Prompt
+            WriteLine();
+            WriteLine($"Narrator: Samantha, be nice! And better luck next time, {PlayerName}...");
+            WriteLine();
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+
+            //Sleep Prompt
+            WriteLine();
+            ForegroundColor = ConsoleColor.Red;
+            WriteLine("Samantha: Yeah, better luck next time, Snotface! HAHAHA!!!");
+            ForegroundColor = ConsoleColor.Green;
+
+            //Sleep for seperating lines
+            Thread.Sleep(2000);
+            WriteLine();
+            WriteLine("============================");
+            WriteLine();
+        }
+    }
+}
