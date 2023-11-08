@@ -1,0 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Policy;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+
+
+namespace MidtermAdventureGame
+{
+    internal class Evidence : Item
+    {
+        //Properties
+        public string EvidenceName;
+        public bool InPlayerPossession = false;
+        public string Description;
+        public MansionRoom StartingRoom;
+        public FamilyMember IncriminatingAgainst;
+        public int EvidenceIndex; //Identifier for each evidence
+
+        //Constructors
+        public Evidence(int index, string name, string description) : base (name , description)
+        {
+            EvidenceIndex = index;
+            EvidenceName = name;
+            Description = description;
+        }
+
+        //Visual Studio told me to add 'new' to method implementation as it would show that method overrides the method in item
+        public new void TellNameAndDescription() 
+        {
+            ForegroundColor = ConsoleColor.DarkYellow;
+            WriteLine("You have found evidence!");
+            WriteLine();
+            WriteLine($"This piece of evidence is: {EvidenceName}...");
+            WriteLine();
+            WriteLine($"Description: {Description}.");
+            ForegroundColor = ConsoleColor.Green;
+        }
+
+    }
+}
