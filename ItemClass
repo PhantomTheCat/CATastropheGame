@@ -1,0 +1,35 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Policy;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+
+namespace MidtermAdventureGame
+{
+    internal class Item
+    {
+        //Properties
+        protected string ItemName;
+        protected string ItemDescription;
+
+        //Constructor
+        public Item (string itemName, string itemDescription) 
+        {
+            ItemName = itemName;
+            ItemDescription = itemDescription;
+        }
+
+        public void TellNameAndDescription() 
+        {
+            ForegroundColor = ConsoleColor.DarkYellow;
+            WriteLine($"This item is: {ItemName}...");
+            WriteLine();
+            WriteLine($"Description: {ItemDescription}.");
+            WriteLine();
+            ForegroundColor = ConsoleColor.Green;
+        }
+
+    }
+}
