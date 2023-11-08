@@ -1,0 +1,24 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+
+
+namespace MidtermAdventureGame
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            //Transfer the Game over to the StartGame Method
+            Game game = new Game();
+            game.StartGame();
+
+            //Ending
+            WriteLine("Press any key to exit..");
+            ReadKey();
+        }
+    }
+}
