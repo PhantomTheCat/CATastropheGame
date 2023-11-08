@@ -1,0 +1,191 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+using System.Threading;
+
+
+namespace MidtermAdventureGame
+{
+    internal class FamilyMember //The Family Members/Suspects of the game
+    {
+        //Properties
+        public string SuspectName;
+        private bool Murderer;
+        public string RelationToVictim;
+        private int FoundOutMeter = 0;
+        public string Descritption;
+        public FamilyMember CurrentlyTalking;
+            //Property idea given by CHATGTP, where I asked if I could make a property relating to text color of each suspect
+        public ConsoleColor SuspectTextColor;
+
+        //Constructor
+        public FamilyMember(string name, bool murder, string description, string relation, ConsoleColor ColorIdentifier) 
+        {
+            SuspectName = name;
+            Murderer = murder;
+            Descritption = description;
+            RelationToVictim = relation;
+            SuspectTextColor = ColorIdentifier;
+        }
+
+       
+
+        //Methods
+        public void Deny(FamilyMember suspect, ref bool confessCalled) //One of the dialogue things that suspects can do
+        {
+            //Template given from Microsoft Docs Learning: https://learn.microsoft.com/en-us/dotnet/api/system.random.next?view=net-7.0
+            //Used the template given to add random factors into arrays
+
+            //Instance of random to use it
+            Random random = new Random();
+
+            //The string options for dialogueOptions (In an array)
+            string[] dialogueOptions =
+            {
+                $"{suspect.SuspectName}: What?!? I didn't do that!",
+                $"{suspect.SuspectName}: Are you crazy?!?",
+                $"{suspect.SuspectName}: I would never!!",
+                $"{suspect.SuspectName}: Nuh uh...",
+            };
+
+            //Creating a value of dialogueIndex that categorizes the options above into numbers that can be random.Next()
+            int dialogueIndex = random.Next(dialogueOptions.Length);
+
+            //Writing out a random dialogue from the string options above
+            ForegroundColor = SuspectTextColor;
+            WriteLine();
+            WriteLine(dialogueOptions[dialogueIndex]);
+            WriteLine();
+            ForegroundColor = ConsoleColor.Green;
+            Thread.Sleep(3000);
+
+            //For bringing player closer to their confession
+            FoundOutMeter++;
+
+            //For if the confession meter goes up so much that it allows the player to win
+            if (FoundOutMeter >= 3) 
+            {
+                Confess(suspect, ref confessCalled);
+                return;
+            }
+        }
+
+        public void Flustered(FamilyMember suspect, ref bool confessCalled)
+        {
+            //Instance of random
+            Random random = new Random();
+
+            //The string options for dialogueOptions
+            string[] dialogueOptions =
+            {
+                $"{suspect.SuspectName}: I mean I hated them..... *Gasps*",
+                $"{suspect.SuspectName}: I never acted on my hatred.... *Gasps*",
+                $"{suspect.SuspectName}: *Whispers to themself* Crap, how am I supposed to respond to that?",
+                $"{suspect.SuspectName}: UH OH SPAGETTIOS!!! LOOKS LIKE I NEED TO HELP CLEAN SOMETHING OVER THERE!",
+            };
+
+            //Creating a value of dialogueIndex that categorizes the options above into numbers that can be random.Next()
+            int dialogueIndex = random.Next(dialogueOptions.Length);
+
+            //Writing out a random dialogue from the string options above
+            WriteLine();
+            ForegroundColor = SuspectTextColor;
+            WriteLine(dialogueOptions[dialogueIndex]);
+            ForegroundColor = ConsoleColor.Green;
+            WriteLine();
+            Thread.Sleep(3000);
+
+            //For bringing player closer to their confession
+            //The flustered category gives more to the meter
+            FoundOutMeter = FoundOutMeter + 2;
+
+            //For if the confession meter goes up so much that it allows the player to win
+            if (FoundOutMeter >= 3)
+            {
+                Confess(suspect, ref confessCalled);
+                return;
+            }
+        }
+
+        public void Agree(FamilyMember suspect, ref bool confessCalled)
+        {
+            ForegroundColor = SuspectTextColor;
+            WriteLine();
+            WriteLine($"{suspect.SuspectName}: Yes, that piece of evidence is definetely incriminating against me....");
+            Thread.Sleep(2000);
+            WriteLine($"{suspect.SuspectName}: But I swear it wasn't me!");
+            WriteLine();
+            Thread.Sleep(3000);
+            ForegroundColor = ConsoleColor.Green;
+            if (Murderer == true) 
+            {
+                FoundOutMeter += 2;
+                if (FoundOutMeter >= 3)
+                {
+                    Confess(suspect, ref confessCalled);
+                    return;
+                }
+            }
+        }
+
+        public void Confess(FamilyMember suspect, ref bool confessCalled)
+        {
+            if (suspect.Murderer == true) 
+            {
+                
+                //Suspect response
+                ForegroundColor = SuspectTextColor;
+                Clear();
+                WriteLine($"\n{suspect.SuspectName}: Fine, you've caught me....");
+                Thread.Sleep(2000);
+                WriteLine($"{suspect.SuspectName}: I DID MURDER MISS BEATRICE because of our ravenous love!!!");
+                Thread.Sleep(2000);
+                WriteLine($"\n{suspect.SuspectName}: I used the gardener's trowel to put the blame on the Gardener!");
+                WriteLine($"{suspect.SuspectName}: And then I hid scandalous evidence across the mansion to throw you off....");
+                Thread.Sleep(2000);
+                WriteLine($"\n{suspect.SuspectName}: You happy?....");
+
+                //ReadKey for seperating lines
+                Thread.Sleep(2000);
+
+                //Cop Response
+                ForegroundColor = ConsoleColor.Blue;
+                WriteLine("\nCop: Arrest him!!!!");
+                ForegroundColor = ConsoleColor.Green;
+                Thread.Sleep(3000);
+
+
+                //Calling the game to end as the confess has been called
+                confessCalled = true;
+                return;
+            }
+            else 
+            {    
+                //Suspect response
+                Clear();
+                WriteLine();
+                ForegroundColor = SuspectTextColor;
+                WriteLine($"{suspect.SuspectName}: It's really not me!! You've gotta believe me!");
+                WriteLine();
+
+                //ReadKey for seperating lines
+                Thread.Sleep(2000);
+
+                //Narrator response
+                ForegroundColor = ConsoleColor.Green;
+                WriteLine("Narrator: It appears that this is not the suspect we are looking for, please try again!");
+                WriteLine();
+                Thread.Sleep(3000);
+
+                //Calling game to say that the confess wasn't called, and game continues
+                confessCalled = false;
+                return;
+            }
+        }
+
+
+    }
+}
