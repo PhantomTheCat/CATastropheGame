@@ -1,0 +1,37 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+
+
+namespace MidtermAdventureGame
+{
+    internal class MansionRoom : Mansion
+    {
+        //Properties
+        public string RoomName;
+        public bool EvidenceIn;
+        public bool IsCrimeScene;
+        public Evidence SpecificEvidenceIn;
+
+
+
+        //Constructor
+        public MansionRoom(string roomName, bool evidenceIn, bool isCrimeScene) 
+        {
+            RoomName = roomName;
+            EvidenceIn = evidenceIn;
+            IsCrimeScene = isCrimeScene;
+        }
+
+        //Methods
+        public void EvidenceOut()
+        {
+            //Method for taking evidence out of the room
+            EvidenceIn = false;
+        }
+ 
+    }
+}
