@@ -1,0 +1,99 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+using System.Threading;
+
+
+namespace MidtermAdventureGame
+{
+    internal class Utility
+    {
+        //Methods
+
+        public void RulesOfGame()
+        {
+            //This is for making player understand the rules of the game.
+
+            //Game Description by Narrator
+            WriteLine();
+            WriteLine(@"Narrator: Now we'll go into explaining the game....
+");
+            WaitSeconds();
+            WriteLine();
+
+
+            //Explanation of rules by Narrator
+            WriteLine("Narrator: To beat this game, you must do these things:\n");
+            WaitSeconds();
+            WriteLine("1.) Find evidence in the various rooms of this house\n");
+            WaitSeconds();
+            WriteLine("2.) Interrogate and get a suspect to confess..... \nThey are ALL gathered in the dining hall for interrogation...\n");
+            WaitSeconds();
+            WriteLine("3.) You must do this all in 10 turns or less, otherwise you lose the murderer and the game.\n");
+            WaitSeconds();
+            WriteLine("    a.) Moving to a room DOES NOT cost a turn\n");
+            WaitSeconds();
+            WriteLine("    b.) Interrogating suspects DOES cost a turn\n");
+            WaitSeconds();
+            WriteLine("    c.) Searching for evidence DOES cost a turn\n");
+            EndPrompt();
+
+            //Samantha Statement
+            SamanthaPrompt();
+            WriteLine("\nSamantha: Yeah, what they said...\n");
+            EndPrompt();
+
+
+
+        }
+        public void DescriptionOfGame()
+        {
+            //As suggested, this is for the description of the game for the player
+            //Samantha's line
+            WriteLine();
+            SamanthaPrompt();
+            WriteLine(@"Fake Narrator :
+In a world filled with human-sized cats, one cat is on top of all....");
+            WaitSeconds();
+            WriteLine("And her name is BEATRICE LUNGHORN, well that was her name until she was brutally killed....");
+            WaitSeconds();
+            WriteLine("Now every cat must know what happened that fateful night, so we have called upon you!");
+            WaitSeconds();
+            WriteLine("Yes, you, oh Great Detective to solve this case");
+            WaitSeconds();
+            WriteLine("Please bring Beatrice's murderer to justice!");
+            EndPrompt();
+
+            //Narrator's line
+            WriteLine();
+            WriteLine(@"Actual Narrator : 
+All right, all right.. Stop that Samantha, we don't want to scare them away.");
+            WaitSeconds();
+            WriteLine("On the other note, hello player! I will be the one you ACTUALLY communicate with and play with!");
+            EndPrompt();
+        }
+
+
+        public void SamanthaPrompt() //Used explicity for Samantha's prompts in the game
+        {
+            ForegroundColor = ConsoleColor.Red;
+        }
+
+        public void WaitSeconds() //For waiting a certain amount of seconds
+        {
+            Thread.Sleep(2000);
+        }
+
+        public void EndPrompt() //Made for ending the prompt of anyone talking, and going back to default of narrator
+        {
+            //Get's placed at end of talking prompts to say ReadKey and put the text color back to narrator color
+            ForegroundColor = ConsoleColor.Green;
+            Thread.Sleep(3000);
+        }
+        
+
+    }
+}
