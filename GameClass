@@ -1,0 +1,560 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Policy;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Console;
+using System.Threading;
+
+namespace MidtermAdventureGame
+{
+    internal class Game
+    {
+        //Properties
+              //Regular Properties
+        private string GameTitle = "A CATastrophe: A Murder Mystery";
+        
+        //For the early termination condition of CoreLoop
+        private bool ConfessCalled = false;
+
+        //Bool for finding if the room was empty or not in the core loop
+        private bool WasInRoom;
+
+        //Setting up playerResponse for getting their choice in core loop of game
+        private string playerResponse;
+
+        //Which suspect the player is talking to, to be used for deciding who to interrogate.
+        private string CurrentTalkingSuspect;
+
+        //The max amount of turns the player can take
+        private int TurnLimit = 10;
+
+        //Lists that need to be set up
+        List<MansionRoom> mansionRooms = new List<MansionRoom>(); //For MansionRooms
+        List<FamilyMember> familyMembers = new List<FamilyMember>(); //For FamilyMembers
+        List<Evidence> evidences = new List<Evidence>(); //For Evidence
+        
+        //Objects added to the lists
+              //Evidence Objects
+        Evidence BloodyGardenTrowl = new Evidence(1, "a bloody garden trowel", "is a piece of traditional gardening equipment that is used frequently, \n this is however covered in blood...");
+        Evidence DivorcePapers = new Evidence(2, "some divorce papers", "looks like someone's marriage wasn't going well....");
+        Evidence DNATest = new Evidence(3, "a DNA test", "is a DNA test that shows Katie as Beatrice's daughter \n that Beatrice abandoned when Katie was 2 months old...");
+        Evidence LoveLetter = new Evidence(4, "a love letter from the Chef", "looks like some people were getting spicy..");
+        Evidence CreepyCupboard = new Evidence(5, "a hidden cupboard", "contains love letters between Chef Lewis and Beatrice,\n with the last one saying 'If I can't have you, no one can'...");
+        Evidence Shrine = new Evidence(6, "a hidden shrine", "contains multiple pieces of Beatrice's clothing and hair, along with \n a photo of Beatrice that has her eyes cut out");
+        Evidence BeatriceBody = new Evidence(7, "Beatrice's dead body", "was stabbed in the dining room with something long and pointy... \n It appears that the table was only set for two.... ");
+        Evidence Cameras = new Evidence(8, "the Security Cameras", @"The cameras show the night of Beatrice's death...
+It seems like most people were asleep, except for the gardener and butler cleaning,
+while the chef cooks a beautiful meal...
+");
+
+                //Room Objects
+        public MansionRoom DiningHall = new MansionRoom("Dining Hall", true, true);
+        public MansionRoom MysteriousHallway = new MansionRoom("Mysterious Hallway", true, false);
+        public MansionRoom Kitchen = new MansionRoom("Kitchen", true, false);
+        public MansionRoom BeatriceBedroom = new MansionRoom("Beatrice's Bedroom", true, false);
+        public MansionRoom SecurityCameraRoom = new MansionRoom("Security Camera Room", true, false);
+        public MansionRoom GuestBedroom1 = new MansionRoom("1st Guest Bedroom", true, false);
+        public MansionRoom GuestBedroom2 = new MansionRoom("2nd Guest Bedroom", true, false);
+        public MansionRoom ButlerRoom = new MansionRoom("Butler's Break Room", false, false);
+        public MansionRoom Garden = new MansionRoom("Garden", true, false);
+
+            //Family Members/Suspects Objects
+        FamilyMember ButlerCastacio = new FamilyMember("Butler Castacio", false, "wears a fancy suit and has greased up black fur", "the butler", ConsoleColor.Cyan);
+        FamilyMember DaughterElanor = new FamilyMember("Elanor", false, "wears a sundress and has orange fur", "the daughter", ConsoleColor.Yellow);
+        FamilyMember HusbandBob = new FamilyMember("Bob", false, "wears nothing except shorts and has no fur", "the husband", ConsoleColor.DarkBlue);
+        FamilyMember ChefLewis = new FamilyMember("Chef Lewis", true, "wears a traditional chef coat and has brown fur", "the mansion's chef", ConsoleColor.Magenta);
+        FamilyMember GardenerJohn = new FamilyMember("Gardener John", false, "wears a well-used outside work outfit and has black fur", "the gardener", ConsoleColor.White);
+        FamilyMember Katie = new FamilyMember("Katie", false, "wears a pie-themed sweater and has brown fur", "the one nobody talks to", ConsoleColor.Gray);
+
+
+            //Setting up instances of this class to call back to the methodss related to those classes later
+        Utility ForMethodsFromUtility = new Utility();
+        Player MainPlayer = new Player();
+
+
+
+        //Methods
+        public void StartGame() //The Meat and Bones of the game
+        {
+            //Setting up the instances/lists of the game
+            SetUp();
+
+            //Introduction to game for player
+            Introduction();
+            Clear();
+
+            //Referencing the rules of the game for the player
+            SeperationLine();
+            ForMethodsFromUtility.RulesOfGame();
+
+            //Narrator Statement that's still part of RulesOfGame
+            int index = 1;
+            Clear();
+            SeperationLine();
+            WriteLine("Narrator: Your current suspects are:");
+            foreach (FamilyMember suspect in familyMembers)
+            {
+                WriteLine($"{index}.) Name: {suspect.SuspectName}");
+                WriteLine($"             Description: {suspect.Descritption}");
+                WriteLine($"             Relation to the victim: {suspect.RelationToVictim}");
+                index++;
+                Thread.Sleep(2000);
+            }
+            Thread.Sleep(4000);
+            WriteLine();
+            Clear();
+
+            //Core Loop of game as a for loop
+            CoreLoop();
+
+            //Ending of game
+            if (ConfessCalled == false)
+            {
+                MainPlayer.PlayerLost();
+            }
+            else if (ConfessCalled == true)
+            {
+                MainPlayer.PlayerWin();
+            }
+            else 
+            {
+                //For stating that an error has occured in the process
+                SeperationLine();
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine("An error has occured...");
+                ForegroundColor = ConsoleColor.Green;
+                SeperationLine();
+                ReadKey();
+            }
+
+        }        
+        
+
+        public void CoreLoop() //Core loop of the game that incorporates the turns
+        {
+            for (int i = 1; i <= TurnLimit; i++)
+            {
+                if (ConfessCalled == true) 
+                {
+                    return;
+                }
+                else
+                {
+                    Clear();
+                    SeperationLine();
+                    WriteLine($"You are currently in {MainPlayer.CurrentPlaceAt.RoomName}");
+                    WriteLine($"You are currently on turn {i}/{TurnLimit}.");
+                    SeperationLine();
+
+                    //If statement for displaying the choices if the Player is in the dining rooms
+                    if (MainPlayer.CurrentPlaceAt == DiningHall)
+                    {
+                        //Asking what player wants to do
+                        WriteLine(@"What would you like to do? Please type in the number....
+1.) Move Rooms
+2.) Search for Evidence
+3.) Interrogate Family Member (Requires evidence)
+");
+                        try
+                        {
+                            //Getting player response and checking it, while also performing function associated
+                            playerResponse = ReadLine().Trim().ToLower();
+                            switch (playerResponse)
+                            {
+                                case "move rooms":
+                                case "1":
+                                    //Asking what room the player wants to move into, don't want the TurnIndex or i to increment
+                                    MoveRooms(mansionRooms);
+                                    i--;
+                                    break;
+                                case "search for evidence":
+                                case "2":
+                                    //Using method from player group to Investigate the room
+                                    MainPlayer.InvestigateRoom(MainPlayer.CurrentPlaceAt, evidences, ref WasInRoom);
+                                    ChangingTurns(ref i);
+                                    break;
+                                case "interrogate family member":
+                                case "3":
+                                    //Need to check if user has evidence
+                                    if (MainPlayer.EvidenceFound > 0)
+                                    {
+                                        //Moving on to the operation that will have player interrogate
+                                        ChooseInterrogationSuspect();
+                                    }
+                                    else
+                                    {
+                                        //Letting player know they cannot continue until having enough evidence
+                                        ForegroundColor = ConsoleColor.Red;
+                                        WriteLine();
+                                        WriteLine("You don't have enough evidence to interrogate!");
+                                        WriteLine("Come back when you have enough...");
+                                        ForegroundColor = ConsoleColor.Green;
+                                        ReadKey();
+
+                                        //Way of making sure turn increment doesn't go up because of mistake
+                                        i--;
+                                    }
+                                    break;
+                                default:
+                                    InvalidResponse();
+                                    i--;
+                                    break;
+                            }
+                        }
+                        catch //If player response is invalid
+                        {
+                            InvalidResponse();
+                            i--;
+                        }
+                    }
+
+                    //If statement that runs only when player is in the security camera room
+                    else if (MainPlayer.CurrentPlaceAt == SecurityCameraRoom)
+                    {
+                        //Give user options
+                        WriteLine(@"What would you like to do? Please type in the number....
+1.) Move Rooms
+2.) Search through cameras
+");
+                        try
+                        {
+                            //get player response and check
+                            playerResponse = ReadLine().Trim().ToLower();
+                            switch (playerResponse)
+                            {
+                                case "move rooms":
+                                case "1":
+                                    //Asking what room the player wants to move into
+                                    MoveRooms(mansionRooms);
+                                    //For keeping the cycle from incrementing
+                                    i--;
+                                    break;
+                                case "search through cameras":
+                                case "2":
+                                    //For calling the search through cameras
+                                    MainPlayer.SearchCameras(Cameras, SecurityCameraRoom, ref WasInRoom);
+                                    //For checking to see if ran or not
+                                    ChangingTurns(ref i);
+                                    break;
+                                default:
+                                    InvalidResponse();
+                                    i--;
+                                    break;
+                            }
+                        }
+                        catch
+                        {
+                            InvalidResponse();
+                            i--;
+                        }
+                    }
+
+                    //Statement that runs for all other rooms
+                    else
+                    {
+                        //Give user options
+                        WriteLine(@"What would you like to do? Please type in the number....
+1.) Move Rooms
+2.) Search for Evidence
+");
+                        try
+                        {
+                            //Get user response and check it
+                            playerResponse = ReadLine().Trim().ToLower();
+                            switch (playerResponse)
+                            {
+                                case "move rooms":
+                                case "1":
+                                    //Asking what room the player wants to move into
+                                    MoveRooms(mansionRooms);
+                                    //For keeping the cycle from incrementing
+                                    i--;
+                                    break;
+
+                                case "search for evidence":
+                                case "2":
+                                    //Using method from player group to Investigate the room
+                                    MainPlayer.InvestigateRoom(MainPlayer.CurrentPlaceAt, evidences, ref WasInRoom);
+                                    //For checking if anything was in room
+                                    ChangingTurns(ref i);
+                                    break;
+                                default:
+                                    InvalidResponse();
+                                    i--;
+                                    break;
+                            }
+                        }
+                        catch
+                        {
+                            InvalidResponse();
+                            i--;
+                        }
+                    }
+                }
+            }
+
+                
+        }
+        public void ChangingTurns(ref int i) //Used in core loop to increment turns in the loop (For not repeating myself)
+        {
+            if (WasInRoom == true)
+            {
+
+            }
+            else 
+            {
+                //For keeping the turn from incrementing
+                i--;
+            }
+
+        }
+
+
+        public void ChooseInterrogationSuspect() 
+        {
+            WriteLine();
+            WriteLine($@"Which suspect would you like to interrogate? Please type in their number!
+1.) {ButlerCastacio.SuspectName}
+2.) {DaughterElanor.SuspectName}
+3.) {HusbandBob.SuspectName}
+4.) {ChefLewis.SuspectName}
+5.) {GardenerJohn.SuspectName}
+6.) {Katie.SuspectName}
+
+");
+            WriteLine();
+            //Need to convert the CurrentTalkingSuspect to an integer
+            CurrentTalkingSuspect = ReadLine().Trim();
+            int TalkingSuspect = int.Parse(CurrentTalkingSuspect);
+
+            switch (TalkingSuspect)
+            {
+                case 1:
+                    MainPlayer.UseEvidence(ButlerCastacio, ref ConfessCalled);
+                    break;
+                case 2:
+                    MainPlayer.UseEvidence(DaughterElanor, ref ConfessCalled);
+                    break;
+                case 3:
+                    MainPlayer.UseEvidence(HusbandBob, ref ConfessCalled);
+                    break;
+                case 4:
+                    MainPlayer.UseEvidence(ChefLewis, ref ConfessCalled);
+                    break;
+                case 5:
+                    MainPlayer.UseEvidence(GardenerJohn, ref ConfessCalled);
+                    break;
+                case 6:
+                    MainPlayer.UseEvidence(Katie, ref ConfessCalled);
+                    break;
+                default:
+                    ForegroundColor = ConsoleColor.Red;
+                    WriteLine($"You typed in {CurrentTalkingSuspect}...");
+                    WriteLine("That was an invalid response.... Please type in only numbers");
+                    ForegroundColor = ConsoleColor.Green;
+                    ReadKey();
+                    ChooseInterrogationSuspect();
+                    break;
+            }
+            Clear();
+        }
+
+        public void MoveRooms(List<MansionRoom> choices) //Method for player to move between rooms
+        {
+            //Template given in lecture on week #4 and modified since. Permission was given to use in assignments if we want.
+
+            SeperationLine();
+
+            //This is the result that will be returned from this method
+            int result = -1;
+
+            //Let's show the user the options with a title
+            Console.WriteLine("Please pick a room to go into by typing the number: ");
+            for (int i = 0; i < choices.Count; i++)
+            {
+                //This local variable is only used for display purposes, value is increase by 1 because arrays start with 0 and nobody counts from 0 in real life
+                int forOurDisplayPurpouse = i + 1;
+                //Show the user the option with a number for them to pick
+                Console.WriteLine(forOurDisplayPurpouse + ") " + choices[i].RoomName);
+            }
+            
+            //Seperation Line
+            WriteLine();
+
+            //Try to parse user input into an integer.
+            try
+            {
+                //Parse the user input
+                result = int.Parse(Console.ReadLine().Trim());
+  
+                //Switching the room based on how the player responded
+                switch (result) 
+                {
+                    case 1:
+                        MainPlayer.CurrentPlaceAt = DiningHall;
+                        break;
+                    case 2:
+                        MainPlayer.CurrentPlaceAt = MysteriousHallway;
+                        break;
+                    case 3:
+                        MainPlayer.CurrentPlaceAt = Kitchen;
+                        break;
+                    case 4:
+                        MainPlayer.CurrentPlaceAt = SecurityCameraRoom;
+                        break;
+                    case 5:
+                        MainPlayer.CurrentPlaceAt = GuestBedroom1;
+                        break;
+                    case 6:
+                        MainPlayer.CurrentPlaceAt = GuestBedroom2;
+                        break;
+                    case 7:
+                        MainPlayer.CurrentPlaceAt = BeatriceBedroom;
+                        break;
+                    case 8:
+                        MainPlayer.CurrentPlaceAt = ButlerRoom;
+                        break;
+                    case 9:
+                        MainPlayer.CurrentPlaceAt = Garden;
+                        break;
+                    default: 
+                        break;
+                }
+
+            }
+            catch
+            {
+                ForegroundColor = ConsoleColor.Red;
+                WriteLine("Sorry that didn't work, please try again...");
+                ForegroundColor = ConsoleColor.Green;
+                MoveRooms(choices);
+            }
+
+            //Makes sure that the user picked a valid choice by comparing the result with the number of choices
+            if (result > 0 && result <= choices.Count)
+            {
+                //We are reversing the user input because arrays start with 0 and nobody counts from 0 in real life
+                result = result - 1;
+            }
+            else
+            {
+                //If the user picked an invalid choice, we will call the same method again to get a valid choice using recursion
+                Console.WriteLine("You picked an invalid choice");
+                MoveRooms(choices);
+            }
+        }
+
+
+        public void SeperationLine() //Seperation Line for seperating prompts, better user interface
+        {
+            WriteLine();
+            WriteLine("============================");
+            WriteLine();
+        }
+        public void InvalidResponse() //Method for if the player gives an invalid response in the core loop
+        {
+            ForegroundColor = ConsoleColor.Red;
+            WriteLine($"You typed in {playerResponse}");
+            WriteLine("Sorry that was an invalid response, please type in the number...");
+            ForegroundColor = ConsoleColor.Green;
+
+            ReadKey();
+        }
+        public void SetUp() //SetUp of all the lists and instances of the game
+        {
+            //Setting up where player starts
+            MainPlayer.CurrentPlaceAt = DiningHall;
+
+            //Rooms
+                //List of rooms to go to in the mansion
+            mansionRooms.Add(DiningHall);// rooms[0]
+            mansionRooms.Add(MysteriousHallway);// rooms[1]
+            mansionRooms.Add(Kitchen);// rooms[2]
+            mansionRooms.Add(SecurityCameraRoom);// rooms[3]
+            mansionRooms.Add(GuestBedroom1); // rooms[4]
+            mansionRooms.Add(GuestBedroom2); // rooms[5]
+            mansionRooms.Add(BeatriceBedroom); // rooms[6]
+            mansionRooms.Add(ButlerRoom); // rooms[7]
+            mansionRooms.Add(Garden); // rooms[8]
+                //Evidences in rooms
+
+
+            //Family Members
+                //Adding those instances to a list
+            familyMembers.Add(ButlerCastacio);
+            familyMembers.Add(DaughterElanor);
+            familyMembers.Add(HusbandBob);
+            familyMembers.Add(ChefLewis);
+            familyMembers.Add(GardenerJohn);
+            familyMembers.Add(Katie);
+
+            //Evidence
+            //Fleshing out the details of the evidence
+            //Bloody Garden Trowl
+            BloodyGardenTrowl.StartingRoom = Garden;
+            BloodyGardenTrowl.IncriminatingAgainst = GardenerJohn;
+            //Divorce Papers
+            DivorcePapers.StartingRoom = GuestBedroom2;
+            DivorcePapers.IncriminatingAgainst = HusbandBob;
+            //DNA Test
+            DNATest.StartingRoom = BeatriceBedroom;
+            DNATest.IncriminatingAgainst = Katie;
+            //Love Letter
+            LoveLetter.StartingRoom = GuestBedroom1;
+            LoveLetter.IncriminatingAgainst = ChefLewis;
+            //Creepy Cupboard
+            CreepyCupboard.StartingRoom = MysteriousHallway;
+            CreepyCupboard.IncriminatingAgainst = ChefLewis;
+            //Shrine
+            Shrine.StartingRoom = Kitchen;
+            Shrine.IncriminatingAgainst = ChefLewis;
+            //Beatrice body (Not incriminating against any of the family members)
+            BeatriceBody.StartingRoom = DiningHall;
+            //Adding them to list
+            evidences.Add(BloodyGardenTrowl);
+            evidences.Add(DivorcePapers);
+            evidences.Add(DNATest);
+            evidences.Add(LoveLetter);
+            evidences.Add(CreepyCupboard);
+            evidences.Add(Shrine);
+            evidences.Add(BeatriceBody);
+
+        }
+        public void Introduction() //Introduction to game that calls to StartGame()
+        {
+            //Narrator color
+            ForegroundColor = ConsoleColor.Green;
+
+            //Ascii art for title from https://patorjk.com/software/taag/#p=display&f=Star%20Wars&t=CATastrophe
+            WriteLine(@"
+  ________ ______         __                __      
+ / ___/ _ /_  __/__ ____ / /________  ___  / /  ___ 
+/ /__/ __ |/ / / _ `(_-</ __/ __/ _ \/ _ \/ _ \/ -_)
+\___/_/ |_/_/  \_,_/___/\__/_/  \___/ .__/_//_/\__/ 
+                                   /_/              
+");
+
+            //Game now here, and starting with title
+            Title = GameTitle;
+            WriteLine($"Welcome to {GameTitle}!");
+            //Letting player know the rules of interaction throughout game
+            WriteLine("Please press any key to continue through actions throughout the game!");
+            ReadKey();
+
+            //Provide player with description/intro of game (Make method under Utility class)
+            SeperationLine();
+            ForMethodsFromUtility.DescriptionOfGame();
+            Clear();
+            SeperationLine();
+
+            //Have to get player name (Method from Player class)
+            //First have to declare an instance of that class
+            MainPlayer.SetPlayerName();
+            SeperationLine();
+
+        }
+
+    }
+}
